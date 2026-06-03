@@ -64,6 +64,17 @@ export const OPTION_ID_TO_KEY: Record<1 | 2 | 3 | 4, OptionKey> = {
   4: 'option4',
 };
 
+export const ALL_AUDIO_TRACKS = Object.values(optionData).flatMap((option) => [...option.audio]);
+
+export type AudioStatusCallback = (status: string) => void;
+
+export function formatAudioError(err: unknown): string {
+  if (err instanceof Error) {
+    return `${err.name}: ${err.message}`;
+  }
+  return String(err);
+}
+
 /** Configure a DOM audio element for iOS Safari / mobile inline playback. */
 export function configureMobileAudio(audio: HTMLAudioElement): void {
   audio.preload = 'auto';
@@ -71,27 +82,92 @@ export function configureMobileAudio(audio: HTMLAudioElement): void {
   audio.setAttribute('webkit-playsinline', 'true');
 }
 
+export function pauseAllAudio(pool: Map<string, HTMLAudioElement>): void {
+  pool.forEach((audio) => {
+    audio.pause();
+    audio.currentTime = 0;
+  });
+}
+
+/**
+ * Unlock mobile audio context on a user gesture without changing src at runtime.
+ */
+export function unlockAudioPool(
+  pool: Map<string, HTMLAudioElement>,
+  onStatus: AudioStatusCallback
+): boolean {
+  const firstTrack = optionData.option1.audio[0];
+  const audio = pool.get(firstTrack);
+
+  if (!audio) {
+    onStatus(`Error: unlock element missing (${firstTrack})`);
+    return false;
+  }
+
+  onStatus('Unlocking audio context...');
+
+  audio.play()
+    .then(() => {
+      audio.pause();
+      audio.currentTime = 0;
+      onStatus('Unlocked');
+    })
+    .catch((err) => {
+      const msg = formatAudioError(err);
+      console.log('Audio unlock failed due to browser restriction:', err);
+      onStatus(`Unlock error: ${msg}`);
+    });
+
+  return true;
+}
+
 /**
  * Play a reaction track synchronously inside a user-gesture handler (click/tap).
- * Must be called directly from onClick — not from useEffect or async callbacks.
+ * Uses pre-mounted elements with fixed src — never mutates src during playback.
  */
-export function playOptionAudio(
-  audio: HTMLAudioElement,
+export function playOptionAudioFromPool(
+  pool: Map<string, HTMLAudioElement>,
   optionId: 1 | 2 | 3 | 4,
-  index: number
+  index: number,
+  onStatus: AudioStatusCallback
 ): void {
-  configureMobileAudio(audio);
+  pauseAllAudio(pool);
 
   const track = optionData[OPTION_ID_TO_KEY[optionId]].audio[index];
+  const audio = pool.get(track);
 
-  audio.pause();
-  audio.currentTime = 0;
-  audio.src = track;
-  audio.load();
+  if (!audio) {
+    onStatus(`Error: missing audio element for ${track}`);
+    return;
+  }
+
+  if (audio.error) {
+    onStatus(`Error: media ${track} — ${audio.error.message}`);
+    return;
+  }
+
+  onStatus(`Playing: ${track}`);
 
   audio.play().catch((err) => {
+    const msg = formatAudioError(err);
     console.log('Audio playback failed due to browser restriction:', err);
+    onStatus(`Error: ${msg}`);
   });
+}
+
+export async function verifyAudioAssets(onStatus: AudioStatusCallback): Promise<void> {
+  const sampleTrack = optionData.option1.audio[0];
+
+  try {
+    const response = await fetch(sampleTrack, { method: 'HEAD' });
+    if (!response.ok) {
+      onStatus(`Error: asset HTTP ${response.status} for ${sampleTrack}`);
+      return;
+    }
+    onStatus('Idle (assets reachable)');
+  } catch (err) {
+    onStatus(`Error: asset check failed — ${formatAudioError(err)}`);
+  }
 }
 
 interface MemePosterProps {

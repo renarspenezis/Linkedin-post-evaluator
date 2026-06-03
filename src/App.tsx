@@ -9,7 +9,15 @@ import {
   Sparkle,
 } from 'lucide-react';
 import { ResponseOption } from './types';
-import MemePoster, { configureMobileAudio, optionData, OPTION_ID_TO_KEY, playOptionAudio } from './components/MemePoster';
+import MemePoster, {
+  ALL_AUDIO_TRACKS,
+  configureMobileAudio,
+  optionData,
+  OPTION_ID_TO_KEY,
+  playOptionAudioFromPool,
+  unlockAudioPool,
+  verifyAudioAssets,
+} from './components/MemePoster';
 
 const OPTIONS: ResponseOption[] = [
   {
@@ -37,22 +45,45 @@ const OPTIONS: ResponseOption[] = [
 export default function App() {
   const [selectedId, setSelectedId] = useState<1 | 2 | 3 | 4 | null>(null);
   const [variantIndex, setVariantIndex] = useState<number>(0);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const [audioStatus, setAudioStatus] = useState('Idle');
+  const [needsAudioUnlock, setNeedsAudioUnlock] = useState(true);
+  const audioPoolRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+
+  const registerAudioElement = (path: string, element: HTMLAudioElement | null) => {
+    if (element) {
+      configureMobileAudio(element);
+      audioPoolRef.current.set(path, element);
+      return;
+    }
+    audioPoolRef.current.delete(path);
+  };
 
   useEffect(() => {
-    if (audioRef.current) {
-      configureMobileAudio(audioRef.current);
-    }
+    void verifyAudioAssets(setAudioStatus);
   }, []);
+
+  const handleAudioUnlock = () => {
+    unlockAudioPool(audioPoolRef.current, (status) => {
+      setAudioStatus(status);
+      if (status === 'Unlocked') {
+        setNeedsAudioUnlock(false);
+      }
+    });
+  };
 
   const handleSelectOption = (id: 1 | 2 | 3 | 4) => {
     const randomIndex = Math.floor(Math.random() * 3);
-    const audio = audioRef.current;
 
-    if (audio) {
-      playOptionAudio(audio, id, randomIndex);
+    if (needsAudioUnlock) {
+      unlockAudioPool(audioPoolRef.current, (status) => {
+        setAudioStatus(status);
+        if (status === 'Unlocked') {
+          setNeedsAudioUnlock(false);
+        }
+      });
     }
 
+    playOptionAudioFromPool(audioPoolRef.current, id, randomIndex, setAudioStatus);
     setSelectedId(id);
     setVariantIndex(randomIndex);
   };
@@ -65,15 +96,42 @@ export default function App() {
 
   return (
     <>
-      <audio
-        ref={audioRef}
-        className="hidden"
-        playsInline
-        preload="auto"
-        aria-hidden="true"
-        tabIndex={-1}
-      />
-    <div className="bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-50 via-slate-100 to-slate-200 h-screen overflow-hidden text-slate-800 font-sans flex flex-col px-4 md:px-8 py-2">
+      {ALL_AUDIO_TRACKS.map((track) => (
+        <audio
+          key={track}
+          ref={(element) => registerAudioElement(track, element)}
+          src={track}
+          className="hidden"
+          playsInline
+          preload="auto"
+          aria-hidden="true"
+          tabIndex={-1}
+          onPlaying={() => setAudioStatus(`Playing: ${track}`)}
+          onError={() => setAudioStatus(`Error: failed to load ${track}`)}
+        />
+      ))}
+
+      {needsAudioUnlock && (
+        <button
+          type="button"
+          onClick={handleAudioUnlock}
+          className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/40 px-4 pb-24 md:hidden"
+          aria-label="Tap to enable audio"
+        >
+          <span className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 shadow-lg">
+            Tap to enable audio
+          </span>
+        </button>
+      )}
+
+      <div
+        id="audio-debug-overlay"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-black/85 px-3 py-2 text-[10px] font-mono leading-snug text-white pointer-events-none"
+      >
+        Audio Status: {audioStatus}
+      </div>
+
+    <div className="bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-50 via-slate-100 to-slate-200 h-screen overflow-hidden text-slate-800 font-sans flex flex-col px-4 md:px-8 py-2 pb-10">
       <div className="max-w-7xl w-full mx-auto flex flex-col flex-1 min-h-0">
         <header id="main-header" className="mb-1.5 shrink-0 text-center">
           <div className="inline-flex items-center gap-1.5 bg-slate-200/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-300/30 text-[10px] text-slate-600 font-semibold uppercase tracking-wider mb-1">
