@@ -1,0 +1,6 @@
+{
+  "name": "LinkedIn Post Evaluator",
+  "description": "An interactive, single-page professional post rating survey with dynamic humor responses, meme imagery, and custom audio indicators.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
