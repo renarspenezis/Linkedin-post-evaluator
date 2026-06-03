@@ -64,6 +64,36 @@ export const OPTION_ID_TO_KEY: Record<1 | 2 | 3 | 4, OptionKey> = {
   4: 'option4',
 };
 
+/** Configure a DOM audio element for iOS Safari / mobile inline playback. */
+export function configureMobileAudio(audio: HTMLAudioElement): void {
+  audio.preload = 'auto';
+  audio.setAttribute('playsinline', '');
+  audio.setAttribute('webkit-playsinline', 'true');
+}
+
+/**
+ * Play a reaction track synchronously inside a user-gesture handler (click/tap).
+ * Must be called directly from onClick — not from useEffect or async callbacks.
+ */
+export function playOptionAudio(
+  audio: HTMLAudioElement,
+  optionId: 1 | 2 | 3 | 4,
+  index: number
+): void {
+  configureMobileAudio(audio);
+
+  const track = optionData[OPTION_ID_TO_KEY[optionId]].audio[index];
+
+  audio.pause();
+  audio.currentTime = 0;
+  audio.src = track;
+  audio.load();
+
+  audio.play().catch((err) => {
+    console.log('Audio playback failed due to browser restriction:', err);
+  });
+}
+
 interface MemePosterProps {
   optionId: 1 | 2 | 3 | 4;
   imageIndex: number;

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ThumbsUp,
@@ -9,7 +9,7 @@ import {
   Sparkle,
 } from 'lucide-react';
 import { ResponseOption } from './types';
-import MemePoster, { optionData, OPTION_ID_TO_KEY } from './components/MemePoster';
+import MemePoster, { configureMobileAudio, optionData, OPTION_ID_TO_KEY, playOptionAudio } from './components/MemePoster';
 
 const OPTIONS: ResponseOption[] = [
   {
@@ -37,28 +37,24 @@ const OPTIONS: ResponseOption[] = [
 export default function App() {
   const [selectedId, setSelectedId] = useState<1 | 2 | 3 | 4 | null>(null);
   const [variantIndex, setVariantIndex] = useState<number>(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
-  const playTrack = (optionId: 1 | 2 | 3 | 4, index: number) => {
-    const optionKey = OPTION_ID_TO_KEY[optionId];
-    const track = optionData[optionKey].audio[index];
-
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
+  useEffect(() => {
+    if (audioRef.current) {
+      configureMobileAudio(audioRef.current);
     }
-
-    const audio = audioRef.current;
-    audio.pause();
-    audio.currentTime = 0;
-    audio.src = track;
-    void audio.play().catch(() => {});
-  };
+  }, []);
 
   const handleSelectOption = (id: 1 | 2 | 3 | 4) => {
     const randomIndex = Math.floor(Math.random() * 3);
+    const audio = audioRef.current;
+
+    if (audio) {
+      playOptionAudio(audio, id, randomIndex);
+    }
+
     setSelectedId(id);
     setVariantIndex(randomIndex);
-    playTrack(id, randomIndex);
   };
 
   const currentOption = selectedId ? OPTIONS.find((o) => o.id === selectedId) : null;
@@ -68,6 +64,15 @@ export default function App() {
       : null;
 
   return (
+    <>
+      <audio
+        ref={audioRef}
+        className="hidden"
+        playsInline
+        preload="auto"
+        aria-hidden="true"
+        tabIndex={-1}
+      />
     <div className="bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-50 via-slate-100 to-slate-200 h-screen overflow-hidden text-slate-800 font-sans flex flex-col px-4 md:px-8 py-2">
       <div className="max-w-7xl w-full mx-auto flex flex-col flex-1 min-h-0">
         <header id="main-header" className="mb-1.5 shrink-0 text-center">
@@ -297,5 +302,6 @@ export default function App() {
         </main>
       </div>
     </div>
+    </>
   );
 }
