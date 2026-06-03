@@ -68,7 +68,7 @@ export default function App() {
       : null;
 
   return (
-    <div className="bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-50 via-slate-100 to-slate-200 h-screen overflow-hidden text-slate-800 font-sans flex flex-col px-8 py-2">
+    <div className="bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-50 via-slate-100 to-slate-200 h-screen overflow-hidden text-slate-800 font-sans flex flex-col px-4 md:px-8 py-2">
       <div className="max-w-7xl w-full mx-auto flex flex-col flex-1 min-h-0">
         <header id="main-header" className="mb-1.5 shrink-0 text-center">
           <div className="inline-flex items-center gap-1.5 bg-slate-200/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-300/30 text-[10px] text-slate-600 font-semibold uppercase tracking-wider mb-1">
@@ -80,11 +80,10 @@ export default function App() {
           </h1>
         </header>
 
-        <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch overflow-hidden">
-          <section id="selector-column" className="lg:col-span-7 flex flex-col gap-1.5 min-h-0 h-full overflow-hidden">
+        <main className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-12 md:grid-rows-[auto_1fr] gap-3 items-stretch overflow-y-auto md:overflow-hidden">
             <div
               id="linkedin-post-card"
-              className="bg-white rounded-xl p-3 shadow-sm border border-slate-200/80 shrink-0 w-full"
+              className="order-1 md:order-none md:col-span-7 md:row-start-1 bg-white rounded-xl p-3 shadow-sm border border-slate-200/80 shrink-0 w-full"
             >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -205,7 +204,7 @@ export default function App() {
             </div>
           </div>
 
-          <div id="survey-card" className="bg-white rounded-xl p-2.5 shadow-sm border border-slate-200/80 flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div id="survey-card" className="order-2 md:order-none md:col-span-7 md:row-start-2 md:min-h-0 bg-white rounded-xl p-2.5 shadow-sm border border-slate-200/80 flex flex-col md:flex-1 md:overflow-hidden">
             <h2 className="text-sm font-bold text-slate-900 mb-0.5 flex items-center gap-1.5 shrink-0">
               <Sparkles className="w-4 h-4 text-amber-500" /> Choose Your Reaction
             </h2>
@@ -213,7 +212,7 @@ export default function App() {
               Select one statement to evaluate the post and generate a reaction.
             </p>
 
-            <div className="flex flex-col gap-1.5 flex-1 min-h-0 overflow-hidden">
+            <div className="flex flex-col gap-1.5 md:flex-1 md:min-h-0 md:overflow-hidden">
               {OPTIONS.map((option) => {
                 const isSelected = selectedId === option.id;
                 return (
@@ -251,9 +250,8 @@ export default function App() {
               })}
             </div>
           </div>
-        </section>
 
-        <section id="response-column" className="lg:col-span-5 min-h-0 h-full flex flex-col max-w-md w-full mx-auto lg:mx-0 lg:max-w-none">
+        <section id="response-column" className="order-3 md:order-none md:col-span-5 md:col-start-8 md:row-start-1 md:row-span-2 flex flex-col shrink-0 md:min-h-0 md:h-full max-w-md w-full mx-auto md:mx-0 md:max-w-none">
           <AnimatePresence mode="wait">
             {!selectedId || !currentOption || !currentCritiqueText ? (
               <motion.div
@@ -262,13 +260,16 @@ export default function App() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
                 id="empty-response-placeholder"
-                className="bg-slate-100 border-2 border-dashed border-slate-300/60 rounded-2xl p-6 text-center flex flex-col items-center justify-center flex-1 min-h-0 h-full"
+                className="bg-slate-100 border-2 border-dashed border-slate-300/60 rounded-2xl p-6 text-center flex flex-col items-center justify-center py-8 md:flex-1 md:min-h-0 md:h-full"
               >
                 <div className="w-10 h-10 rounded-full bg-slate-200/80 flex items-center justify-center mb-2 text-slate-500 text-xl border border-slate-300/40">
                   ⚡
                 </div>
                 <h3 className="text-sm font-bold text-slate-700">Evaluation Standby</h3>
-                <p className="text-[10px] text-slate-400 mt-1 max-w-[220px] leading-relaxed">
+                <p className="text-[10px] text-slate-400 mt-1 max-w-[220px] leading-relaxed md:hidden">
+                  Click an option above to evaluate the post and load the meme response.
+                </p>
+                <p className="text-[10px] text-slate-400 mt-1 max-w-[220px] leading-relaxed hidden md:block">
                   Click an option on the left to evaluate the post and load the meme response.
                 </p>
               </motion.div>
@@ -280,7 +281,7 @@ export default function App() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 180 }}
                 id="response-panel-card"
-                className="bg-slate-900 rounded-2xl shadow-xl overflow-hidden text-white border border-slate-800 flex flex-col flex-1 min-h-0 h-full"
+                className="bg-slate-900 rounded-2xl shadow-xl overflow-hidden text-white border border-slate-800 flex flex-col shrink-0 md:flex-1 md:min-h-0 md:h-full"
               >
                 <div className="p-3 flex flex-col justify-start items-center w-full">
                   <MemePoster optionId={selectedId} imageIndex={variantIndex} />
